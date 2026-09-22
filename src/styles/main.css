@@ -45,16 +45,27 @@ body {
 
 /* ============================================================
    A4 简历纸 —— 屏幕预览与打印共用同一份尺寸
+   内边距下放给各模板（.resume-pad / .resume-bar），
+   因为紧凑版的深色抬头条需要贴纸边，不能统一加内边距。
    ============================================================ */
 .resume-paper {
   width: 210mm;
   min-height: 297mm;
   background: #fff;
-  padding: 16mm 15mm;
   box-sizing: border-box;
   color: #17150f;
   font-size: 10.5pt;
   line-height: 1.65;
+}
+
+/* 常规内容区：A4 页边距 */
+.resume-pad {
+  padding: 16mm 15mm;
+}
+
+/* 贴边的深色抬头条（紧凑版）：自身带内边距 */
+.resume-bar {
+  padding: 10mm 15mm 8mm;
 }
 
 /* 屏幕预览时按容器等比例缩放 */
@@ -80,9 +91,11 @@ body {
     display: block !important;
   }
 
+  /* 页边距交给 @page，这样学术 CV 这类多页简历的每一页都有页边距；
+     若继续用元素内边距，只有第一页顶部和最后一页底部有留白 */
   @page {
     size: A4;
-    margin: 0;
+    margin: 16mm 15mm;
   }
 
   html,
@@ -91,16 +104,34 @@ body {
   }
 
   .resume-paper {
-    width: 210mm;
-    min-height: 297mm;
-    padding: 16mm 15mm;
+    width: auto !important;
+    min-height: 0 !important;
     box-shadow: none !important;
     border-radius: 0 !important;
     page-break-inside: auto;
   }
 
-  /* 每个简历模块尽量不被拦腰截断 */
+  /* 内边距归零，否则会与 @page 的页边距叠加 */
+  .resume-pad,
+  .resume-bar {
+    padding: 0 !important;
+  }
+
+  /* 深色抬头条打印时保住底色（浏览器默认不打印背景） */
+  .resume-bar {
+    background: #17150f !important;
+    color: #f7f3eb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 分页策略：整节不整体避让（长节会被顶到大片留白），改为条目级避让 */
   .resume-section {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .resume-item {
     break-inside: avoid;
     page-break-inside: avoid;
   }

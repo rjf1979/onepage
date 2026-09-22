@@ -12,6 +12,8 @@ import {
   type ProjectItem,
   type ResumeData,
 } from "@/types/resume";
+import { resolveTemplateId } from "@/lib/templates";
+import type { TemplateId } from "@/types/template";
 
 const STORAGE_KEY = "onepage-resume:v1";
 
@@ -33,6 +35,8 @@ export const useResumeStore = defineStore("resume", () => {
           data.value = {
             ...emptyResume(),
             ...parsed,
+            // 旧存档可能没有 templateId，也可能存着已下线的模板 —— 一律收敛成可用值
+            templateId: resolveTemplateId(parsed.templateId),
             basics: { ...emptyResume().basics, ...parsed.basics },
           } as ResumeData;
         }
@@ -138,6 +142,8 @@ export const useResumeStore = defineStore("resume", () => {
     data.value = {
       ...emptyResume(),
       ...parsed,
+      // 备份可能来自模板上线的版本，也可能引用了尚未上线的模板
+      templateId: resolveTemplateId(parsed.templateId),
       basics: { ...emptyResume().basics, ...parsed.basics },
       experience: Array.isArray(parsed.experience) ? parsed.experience : [],
       projects: Array.isArray(parsed.projects) ? parsed.projects : [],
@@ -145,6 +151,11 @@ export const useResumeStore = defineStore("resume", () => {
       skills: typeof parsed.skills === "string" ? parsed.skills : "",
     } as ResumeData;
     return true;
+  }
+
+  /** 换模板：非法或未上线的 id 会被收敛成默认模板 */
+  function setTemplate(id: TemplateId) {
+    data.value.templateId = resolveTemplateId(id);
   }
 
   function loadDemo() {
@@ -172,6 +183,7 @@ export const useResumeStore = defineStore("resume", () => {
     addItem,
     removeItem,
     setBullets,
+    setTemplate,
     importData,
     loadDemo,
     clearAll,

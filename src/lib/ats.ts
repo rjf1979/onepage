@@ -1,4 +1,5 @@
 import type { ResumeData } from "@/types/resume";
+import { findTemplate } from "@/lib/templates";
 
 export interface AtsCheck {
   id: string;
@@ -27,10 +28,16 @@ const hasText = (v: string): boolean => v.trim().length > 0;
 
 /**
  * 纯本地静态分析 —— 不上传任何数据。
- * 排版维度恒为低风险：模板本身就是单栏、纯文本、无文本框/图标/表格。
+ *
+ * 排版维度**不再恒为低风险**：它取决于当前模板。
+ * 单栏模板 DOM 与视觉都是单栏，解析顺序无歧义 → 低；
+ * 视觉分栏（DOM 顺序仍为单栏线性）会被部分机器解析器按位置取词 → 中，如实标注。
  */
 export function analyzeResume(data: ResumeData): AtsReport {
   const { basics, experience, education, projects, skills } = data;
+  const template = findTemplate(data.templateId);
+  const twoColumn = template?.layout === "two-column-dom-safe";
+
   const allBullets = [
     ...experience.flatMap((e) => e.bullets),
     ...projects.flatMap((p) => p.bullets),
@@ -38,13 +45,31 @@ export function analyzeResume(data: ResumeData): AtsReport {
 
   const checks: AtsCheck[] = [];
 
-  // 1. 排版结构 —— 模板保证
-  checks.push({ id: "layout", label: "单栏排版，解析顺序正确", status: "pass" });
+  // 1. 排版结构 —— 由当前模板决定，不再写死「通过」
+  checks.push({
+    id: "layout",
+    label: twoColumn
+      ? `「${template?.name}」为视觉分栏，文本顺序仍按单栏线性输出`
+      : "单栏排版，解析顺序正确",
+    status: twoColumn ? "warn" : "pass",
+    hint: twoColumn
+      ? "分栏本身不丢内容，但少数按坐标取词的解析器可能打乱顺序，投大厂建议用单栏模板"
+      : undefined,
+  });
   checks.push({
     id: "plaintext",
     label: "纯文本结构，无文本框与图形陷阱",
     status: "pass",
+    hint: twoColumn ? "分栏只由 CSS 栅格实现，不是表格或文本框" : undefined,
   });
+  if (template?.expectsMultiPage) {
+    checks.push({
+      id: "pagination",
+      label: "该模板按多页排版，导出时自动分页",
+      status: "pass",
+      hint: "学术 CV 超过一页不影响机器解析，页边距会逐页保留",
+    });
+  }
 
   // 2. 姓名 / 求职意向
   checks.push({
@@ -181,7 +206,7 @@ export function analyzeResume(data: ResumeData): AtsReport {
     checks,
     metrics: {
       completeness,
-      risk: "低",
+      risk: twoColumn ? "中" : "低",
       keywordLevel,
     },
   };

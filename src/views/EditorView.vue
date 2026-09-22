@@ -8,9 +8,11 @@ import TextField from "@/components/editor/TextField.vue";
 import BulletField from "@/components/editor/BulletField.vue";
 import FormSection from "@/components/editor/FormSection.vue";
 import SectionCard from "@/components/editor/SectionCard.vue";
+import TemplateThumb from "@/components/landing/TemplateThumb.vue";
 import { useResumeStore } from "@/stores/resume";
 import { analyzeResume } from "@/lib/ats";
 import { LIVE_TEMPLATES, PENDING_TEMPLATES } from "@/lib/templates";
+import type { TemplateMeta } from "@/types/template";
 import { useFitScale } from "@/composables/useFitScale";
 import type { ListSection } from "@/types/resume";
 
@@ -115,6 +117,13 @@ function handleExport() {
     return;
   }
   window.print();
+}
+
+/** 换模板：未上线的不允许选中（按钮本身也是 disabled） */
+function chooseTemplate(template: TemplateMeta) {
+  if (!template.available) return;
+  store.setTemplate(template.id);
+  templateOpen.value = false;
 }
 
 function exportJson() {
@@ -639,38 +648,54 @@ function clearAll() {
           </button>
         </div>
         <p class="mt-1.5 text-[13px] text-ink-weak">
-          已上线的模板都是单栏纯文本结构，ATS 可完整解析。
+          已上线的模板都是单栏纯文本结构，ATS 可完整解析。后续的分栏模板会保证 DOM
+          顺序仍为单栏线性，并在自检里如实标注解析风险。
         </p>
         <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div
+          <button
             v-for="t in templates"
             :key="t.id"
-            class="rounded-[14px] border p-4"
-            :class="
-              t.available
+            type="button"
+            class="rounded-[14px] border p-3 text-left transition"
+            :class="[
+              t.available ? 'hover:border-vermilion' : 'cursor-not-allowed opacity-70',
+              store.data.templateId === t.id
                 ? 'border-vermilion bg-vermilion-soft/40'
-                : 'border-line bg-paper opacity-70'
-            "
+                : 'border-line bg-white',
+            ]"
+            :disabled="!t.available"
+            @click="chooseTemplate(t)"
           >
-            <div class="flex items-center justify-between">
-              <p class="font-serif-cn text-[16px] font-semibold text-ink">
+            <div
+              class="relative h-[180px] overflow-hidden rounded-[6px] border border-line bg-white"
+            >
+              <TemplateThumb :variant="t.variant" />
+            </div>
+            <div class="mt-2.5 flex items-center justify-between gap-2">
+              <p class="font-serif-cn text-[15.5px] font-semibold text-ink">
                 {{ t.name }}
               </p>
               <span
-                v-if="t.available"
-                class="rounded-full bg-vermilion px-2.5 py-0.5 text-[11px] font-semibold text-white"
+                v-if="store.data.templateId === t.id"
+                class="shrink-0 rounded-full bg-vermilion px-2.5 py-0.5 text-[11px] font-semibold text-white"
               >
                 使用中
               </span>
               <span
+                v-else-if="t.available"
+                class="shrink-0 rounded-full bg-success-soft px-2.5 py-0.5 text-[11px] font-semibold text-success"
+              >
+                可切换
+              </span>
+              <span
                 v-else
-                class="rounded-full bg-[#efe9dc] px-2.5 py-0.5 text-[11px] font-semibold text-[#8a8175]"
+                class="shrink-0 rounded-full bg-[#efe9dc] px-2.5 py-0.5 text-[11px] font-semibold text-[#8a8175]"
               >
                 打磨中
               </span>
             </div>
-            <p class="mt-1.5 text-[12.5px] text-ink-weak">{{ t.tag }}</p>
-          </div>
+            <p class="mt-1 text-[12.5px] text-ink-weak">{{ t.tag }}</p>
+          </button>
         </div>
       </div>
     </div>

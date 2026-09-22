@@ -2,11 +2,11 @@
 /**
  * 模板缩略图骨架 —— 四种版式各有各的骨架，
  * 让「选模板」这一步真的能看出差别，而不是四张一样的占位条。
- * variant 类型与元数据同源，见 lib/templates.ts。
+ * variant 类型与元数据同源，见 types/template.ts。
  */
-import type { TemplateVariant } from "@/lib/templates";
+import type { TemplateId } from "@/types/template";
 
-defineProps<{ variant: TemplateVariant }>();
+defineProps<{ variant: TemplateId }>();
 
 const line = "rounded-[3px] bg-[#ded6c8]";
 const soft = "rounded-[3px] bg-[#c9c0b1]";

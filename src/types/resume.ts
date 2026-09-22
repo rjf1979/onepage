@@ -1,5 +1,7 @@
 /** 简历数据模型 —— 单栏结构，天然可被 ATS 解析 */
 
+import { DEFAULT_TEMPLATE, type TemplateId } from "./template";
+
 export interface Basics {
   name: string;
   title: string;
@@ -36,6 +38,8 @@ export interface EducationItem {
 }
 
 export interface ResumeData {
+  /** 选中的版式。放在数据里而不是纯 UI 状态：它要跟着 JSON 备份走 */
+  templateId: TemplateId;
   basics: Basics;
   experience: ExperienceItem[];
   projects: ProjectItem[];
@@ -47,6 +51,7 @@ export type ListSection = "experience" | "projects" | "education";
 export type BulletSection = "experience" | "projects";
 
 export const emptyResume = (): ResumeData => ({
+  templateId: DEFAULT_TEMPLATE,
   basics: { name: "", title: "", city: "", phone: "", email: "" },
   experience: [],
   projects: [],
@@ -56,6 +61,7 @@ export const emptyResume = (): ResumeData => ({
 
 /** 演示数据 —— 与 Ardot 设计稿保持一致 */
 export const demoResume = (): ResumeData => ({
+  templateId: DEFAULT_TEMPLATE,
   basics: {
     name: "李思远",
     title: "高级产品经理 · 增长方向",

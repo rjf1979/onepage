@@ -24,8 +24,9 @@ const ordered = [...LIVE_TEMPLATES, ...PENDING_TEMPLATES];
           class="mt-3.5 max-w-[620px] text-[15px] leading-[27px] text-ink-soft lg:text-[16px]"
         >
           已上线 {{ LIVE_TEMPLATES.length }} 套，还有 {{ PENDING_TEMPLATES.length }} 套在打磨。
-          每一套都要先过 ATS 解析这一关才敢放出来——分栏、文本框、图标类版式会被机器读丢内容，
-          我们不放这种模板。
+          每一套都要先过 ATS 解析这一关：不用文本框、图标、表格这类机器读不到的结构；
+          分栏模板只用 CSS 栅格做视觉分层，文本顺序仍按单栏线性输出，
+          自检里会如实标成「中等风险」，而不是闭眼说低。
         </p>
       </div>
       <RouterLink
