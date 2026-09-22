@@ -15,6 +15,13 @@ const wallNote = computed(() => {
   const intro = pending > 0 ? `已上线 ${live} 套，还有 ${pending} 套在打磨。` : `${live} 套模板全部上线。`;
   return `${intro}每一套都要先过 ATS 解析这一关：不用文本框、图标、表格这类机器读不到的结构；分栏模板只用 CSS 栅格做视觉分层，文本顺序仍按单栏线性输出，自检里会如实标成「中等风险」，而不是闭眼说低。`;
 });
+
+/** 底部小字同理：全部上线时不再重复报数 */
+const wallCaption = computed(() =>
+  PENDING_TEMPLATES.length > 0
+    ? `${TEMPLATES.length} 套在路线图上 · 已上线 ${LIVE_TEMPLATES.length} 套 · 全部免费，不锁导出。`
+    : `${TEMPLATES.length} 套模板全部上线 · 全部免费，不锁导出。`
+);
 </script>
 
 <template>
@@ -85,7 +92,7 @@ const wallNote = computed(() => {
     </div>
 
     <p class="mt-6 text-[13px] text-ink-weak">
-      {{ TEMPLATES.length }} 套模板 · 已上线 {{ LIVE_TEMPLATES.length }} 套 · 全部免费，不锁导出。
+      {{ wallCaption }}
     </p>
   </section>
 </template>
