@@ -113,20 +113,34 @@ const previewInnerStyle = computed<CSSProperties>(
         class="relative w-full shrink-0 lg:w-[473px]"
         :style="heroBoxStyle"
       >
-        <!-- 装饰纸（窄屏不显示，避免挤压） -->
+        <!-- 装饰纸（窄屏不显示，避免挤压）。
+             设计稿里这块米色底纸要伸出简历右缘一截，印章才露得出来 ——
+             原先 left-[44%] 导致整块连同印章都被简历纸盖住 -->
         <div
-          class="absolute top-[9%] left-[44%] hidden h-[48%] w-[46%] rounded-lg bg-deco lg:block"
+          class="absolute top-[12%] right-[-56px] hidden h-[76%] w-[46%] rounded-lg bg-deco lg:block"
         >
           <div
-            class="absolute top-[70px] left-[44px] h-2.5 w-[76%] rounded-[5px] bg-[#e1d8c6]"
+            class="absolute top-[30px] left-[44px] h-2.5 w-[76%] rounded-[5px] bg-[#e1d8c6]"
           />
           <div
-            class="absolute top-[96px] left-[44px] h-2.5 w-[56%] rounded-[5px] bg-[#e1d8c6]"
+            class="absolute top-[57px] left-[44px] h-2.5 w-[56%] rounded-[5px] bg-[#e1d8c6]"
           />
-          <!-- 朱红印章 -->
+          <!-- 朱红印章：内描边 + 三行白线（第三行断开），对齐设计稿；
+               贴底纸右侧，落在简历纸右缘之外才可见 -->
           <div
-            class="absolute bottom-[46px] left-[26%] h-[68px] w-[68px] rounded-[6px] bg-vermilion/90"
-          />
+            class="absolute right-[6px] bottom-[46px] h-[66px] w-[66px] rounded-[10px] bg-vermilion p-[5px]"
+          >
+            <div
+              class="flex h-full w-full flex-col justify-center gap-[7px] rounded-[6px] border border-white/25 px-[9px]"
+            >
+              <span class="h-[3px] w-[24px] rounded-full bg-[#f7e9e4]" />
+              <span class="h-[3px] w-[24px] rounded-full bg-[#f7e9e4]" />
+              <span class="flex items-center gap-[3px]">
+                <span class="h-[3px] w-[15px] rounded-full bg-[#f7e9e4]" />
+                <span class="h-[3px] w-[7px] rounded-full bg-[#f7e9e4]" />
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- 真实简历预览 -->

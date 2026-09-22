@@ -8,6 +8,7 @@ type IconName =
   | "check-circle"
   | "warn-circle"
   | "chevron-down"
+  | "chevron-up"
   | "sparkle"
   | "download"
   | "lock"
@@ -32,6 +33,7 @@ const ICONS: Record<IconName, IconDef> = {
   "check-circle": { badge: "check" },
   "warn-circle": { badge: "warn" },
   "chevron-down": { stroke: ["M5.5 8l4.5 4.5L14.5 8"] },
+  "chevron-up": { stroke: ["M5.5 12l4.5-4.5 4.5 4.5"] },
   sparkle: {
     solid: ["M10 1.6l2.3 5.9 5.9 2.3-5.9 2.3-2.3 5.9-2.3-5.9L1.8 9.8l5.9-2.3z"],
   },
@@ -52,7 +54,7 @@ const ICONS: Record<IconName, IconDef> = {
       "M3.5 7V5.2c0-.9.7-1.7 1.7-1.7H7",
       "M16.5 7V5.2c0-.9-.7-1.7-1.7-1.7H13",
       "M3.5 13v1.8c0 .9.7 1.7 1.7 1.7H7",
-      "M16.5 13v1.8c0-.9-.7-1.7-1.7-1.7H13",
+      "M16.5 13v1.8c0 .9-.7 1.7-1.7 1.7H13",
     ],
   },
   plus: { stroke: ["M10 4v12M4 10h12"] },

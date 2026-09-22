@@ -8,6 +8,31 @@ import { analyzeResume } from "@/lib/ats";
 
 const store = useResumeStore();
 const report = computed(() => analyzeResume(store.data));
+
+/**
+ * 眉标与标题跟随真实分数。
+ * 设计稿写死「可以放心投递 / 机器读得很顺」，但分数低时这么说就是自欺欺人 ——
+ * 满分时用设计稿原文，有建议时如实说明还有几处。
+ */
+const warnCount = computed(() => report.value.checks.filter((c) => c.status === "warn").length);
+const passed = computed(() => warnCount.value === 0);
+const eyebrow = computed(() =>
+  passed.value ? "自检完成 · 可以放心投递" : `自检完成 · ${warnCount.value} 处建议待改`
+);
+const headline = computed(() =>
+  passed.value
+    ? "这份简历，机器读得很顺"
+    : `这份简历，还有 ${warnCount.value} 处可以让机器读得更顺`
+);
+
+/** 与编辑器一致：没写姓名就导出，HR 不知道这是谁的简历 */
+function exportPdf() {
+  if (!store.data.basics.name.trim()) {
+    alert("先填上姓名再导出吧，不然 HR 不知道这是谁的简历。");
+    return;
+  }
+  window.print();
+}
 </script>
 
 <template>
@@ -41,13 +66,16 @@ const report = computed(() => analyzeResume(store.data));
       <div
         class="w-full max-w-[600px] rounded-[22px] border border-[#e8e1d5] bg-white p-6 shadow-[0_12px_32px_-8px_rgba(23,21,15,0.07)] sm:p-8"
       >
-        <p class="text-[13px] font-semibold tracking-[1.8px] text-success">
-          自检完成 · 本地分析，不上传任何数据
+        <p
+          class="text-[13px] font-semibold tracking-[1.8px]"
+          :class="passed ? 'text-success' : 'text-warn-text'"
+        >
+          {{ eyebrow }}
         </p>
         <h1
           class="font-serif-cn mt-2.5 text-[23px] leading-[34px] font-bold text-ink sm:text-[27px] sm:leading-[38px]"
         >
-          这份简历，机器读得很顺
+          {{ headline }}
         </h1>
 
         <!-- 分数 -->
@@ -112,23 +140,26 @@ const report = computed(() => analyzeResume(store.data));
           </div>
         </div>
 
-        <!-- CTA -->
+        <!-- CTA：主按钮导出、次按钮回编辑器（对齐设计稿的主次关系） -->
         <div class="mt-6 flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
             class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-vermilion py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#c3381a]"
-            @click="() => $router.push('/editor')"
+            @click="exportPdf"
           >
-            <AppIcon name="arrow-left" class="h-4 w-4" />
-            回去继续改
+            <AppIcon name="download" class="h-4 w-4" />
+            导出 PDF
           </button>
           <RouterLink
             to="/editor"
             class="flex flex-1 items-center justify-center rounded-xl border border-[#dcd4c6] py-3.5 text-[15px] font-medium text-[#4a4238] transition hover:border-[#c8bda9]"
           >
-            预览与导出
+            回去继续改
           </RouterLink>
         </div>
+        <p class="mt-3.5 text-[12.5px] leading-5 text-ink-weak">
+          本地分析，数据不上传服务器 · 导出走浏览器打印，不在服务器生成文件。
+        </p>
       </div>
 
       <!-- ---------- 解析示意 ---------- -->

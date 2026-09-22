@@ -7,10 +7,12 @@ import ResumePaper from "@/components/ResumePaper.vue";
 import TextField from "@/components/editor/TextField.vue";
 import BulletField from "@/components/editor/BulletField.vue";
 import FormSection from "@/components/editor/FormSection.vue";
+import SectionCard from "@/components/editor/SectionCard.vue";
 import { useResumeStore } from "@/stores/resume";
 import { analyzeResume } from "@/lib/ats";
 import { LIVE_TEMPLATES, PENDING_TEMPLATES } from "@/lib/templates";
 import { useFitScale } from "@/composables/useFitScale";
+import type { ListSection } from "@/types/resume";
 
 const A4_WIDTH_PX = 793.7;
 const A4_HEIGHT_PX = 1122.5;
@@ -27,20 +29,77 @@ const paperH = computed(() => A4_HEIGHT_PX * scale.value);
 
 /** 预览框：按缩放后的像素尺寸裁切 */
 const editorPreviewBoxStyle = computed<CSSProperties>(
-  () => ({ width: `${paperW.value}px`, height: `${paperH.value}px` }),
+  () => ({ width: `${paperW.value}px`, height: `${paperH.value}px` })
 );
 /** 内层套用 transform 缩放 */
 const editorPreviewInnerStyle = computed<CSSProperties>(
-  () => ({ transform: `scale(${scale.value})` }),
+  () => ({ transform: `scale(${scale.value})` })
 );
 
 const mobileTab = ref<"form" | "preview">("form");
 const templateOpen = ref(false);
 const menuOpen = ref(false);
+const addModuleOpen = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
 /** 模板清单与落地页模板墙同源，见 lib/templates.ts */
 const templates = [...LIVE_TEMPLATES, ...PENDING_TEMPLATES];
+
+/**
+ * 折叠状态 —— 对齐设计稿：「工作经历」展开、「教育背景」折叠成摘要行。
+ * 「项目经验」设计稿没画到，同样按折叠处理，靠摘要行保证内容可见。
+ */
+const collapsed = ref<Record<ListSection, boolean>>({
+  experience: false,
+  projects: true,
+  education: true,
+});
+
+/** 设计稿折叠态显示摘要行，这里由真实数据拼出来 */
+const expSummary = computed(() => {
+  const list = store.data.experience;
+  if (list.length === 0) return "还没填写，这是简历里最重要的一块";
+  const head = [list[0].company, list[0].role].filter(Boolean).join(" · ") || "未命名经历";
+  return list.length > 1 ? `${head} 等 ${list.length} 段` : head;
+});
+
+const prjSummary = computed(() => {
+  const list = store.data.projects;
+  if (list.length === 0) return "还没填写，有拿得出手的项目可以补一条";
+  const head = [list[0].name, list[0].role].filter(Boolean).join(" · ") || "未命名项目";
+  return list.length > 1 ? `${head} 等 ${list.length} 个` : head;
+});
+
+const eduSummary = computed(() => {
+  const list = store.data.education;
+  if (list.length === 0) return "至少写一条学历，校招和社招都会看";
+  const first = list[0];
+  const school = [first.school, [first.major, first.degree].filter(Boolean).join(" ")]
+    .filter(Boolean)
+    .join(" · ");
+  const span = [first.start, first.end].filter(Boolean).join(" — ");
+  return [school, span].filter(Boolean).join(" · ") || "未命名学历";
+});
+
+/**
+ * 添加模块 —— 设计稿是单个虚线按钮，模块清单在展开的菜单里。
+ * 「校园经历 / 证书」设计稿里有，但数据模型还没支持，标为即将上线而不是假装能加。
+ */
+const moduleOptions: { key: string; label: string; ready: boolean }[] = [
+  { key: "experience", label: "工作经历", ready: true },
+  { key: "projects", label: "项目经验", ready: true },
+  { key: "education", label: "教育背景", ready: true },
+  { key: "campus", label: "校园经历", ready: false },
+  { key: "certificate", label: "证书", ready: false },
+];
+
+function addModule(option: { key: string; ready: boolean }) {
+  if (!option.ready) return;
+  const section = option.key as ListSection;
+  store.addItem(section);
+  collapsed.value[section] = false;
+  addModuleOpen.value = false;
+}
 
 function zoom(delta: number) {
   manualScale.value = Math.min(1.5, Math.max(0.3, scale.value + delta));
@@ -226,84 +285,79 @@ function clearAll() {
 
     <!-- ================= 主体 ================= -->
     <div class="flex min-h-0 flex-1">
-      <!-- ---------- 左：表单 ---------- -->
+      <!-- ---------- 左：表单（宽度按设计稿 486px） ---------- -->
       <aside
-        class="scroll-slim w-full shrink-0 overflow-y-auto bg-paper px-5 py-6 md:block md:w-[440px] md:px-7 xl:w-[500px]"
+        class="scroll-slim w-full shrink-0 overflow-y-auto bg-paper px-5 py-6 md:block md:w-[440px] md:px-7 xl:w-[486px]"
         :class="mobileTab === 'form' ? 'block' : 'hidden'"
       >
-        <div class="space-y-5.5">
-          <!-- 基本信息 -->
+        <div class="space-y-4">
+          <!-- 基本信息：设计稿是三个通栏 pill -->
           <FormSection title="基本信息" hint="会显示在简历最上方">
-            <div class="flex flex-col gap-2.5 sm:flex-row">
-              <TextField
-                label="姓名"
-                :model-value="store.data.basics.name"
-                placeholder="李思远"
-                @update:model-value="(v) => store.updateBasics({ name: v })"
-              />
-              <TextField
-                label="意向"
-                :model-value="store.data.basics.title"
-                placeholder="高级产品经理"
-                @update:model-value="(v) => store.updateBasics({ title: v })"
-              />
-            </div>
-            <div class="flex flex-col gap-2.5 sm:flex-row">
-              <TextField
-                label="城市"
-                :model-value="store.data.basics.city"
-                placeholder="上海"
-                @update:model-value="(v) => store.updateBasics({ city: v })"
-              />
-              <TextField
-                label="手机"
-                :model-value="store.data.basics.phone"
-                placeholder="138 0000 0000"
-                @update:model-value="(v) => store.updateBasics({ phone: v })"
-              />
-            </div>
             <TextField
-              label="邮箱"
-              :model-value="store.data.basics.email"
-              placeholder="name@example.com"
-              @update:model-value="(v) => store.updateBasics({ email: v })"
+              label="姓名"
+              wide-label
+              :model-value="store.data.basics.name"
+              placeholder="李思远"
+              @update:model-value="(v) => store.updateBasics({ name: v })"
             />
+            <TextField
+              label="求职意向"
+              wide-label
+              :model-value="store.data.basics.title"
+              placeholder="高级产品经理（增长方向）"
+              @update:model-value="(v) => store.updateBasics({ title: v })"
+            />
+
+            <!-- 联系方式：设计稿是一个 pill 内以「·」分隔。
+                 仍保留三个独立字段 —— 合并成一个自由文本会让 ATS 的手机号/邮箱格式校验失效 -->
+            <div
+              class="flex flex-wrap items-center gap-1.5 rounded-[10px] border border-line bg-white px-3.5 py-2.5 transition focus-within:border-vermilion"
+            >
+              <span class="w-[56px] shrink-0 text-[12.5px] text-ink-weak">联系方式</span>
+              <input
+                :value="store.data.basics.city"
+                placeholder="上海"
+                class="w-[44px] min-w-0 shrink-0 bg-transparent text-[14px] text-ink outline-none placeholder:text-[#c3baaa]"
+                @input="store.updateBasics({ city: ($event.target as HTMLInputElement).value })"
+              />
+              <span class="shrink-0 text-[13px] text-[#d9d1c3]">·</span>
+              <input
+                :value="store.data.basics.phone"
+                placeholder="138 0000 0000"
+                class="w-[100px] min-w-0 shrink-0 bg-transparent text-[14px] text-ink outline-none placeholder:text-[#c3baaa]"
+                @input="store.updateBasics({ phone: ($event.target as HTMLInputElement).value })"
+              />
+              <span class="shrink-0 text-[13px] text-[#d9d1c3]">·</span>
+              <input
+                :value="store.data.basics.email"
+                placeholder="name@example.com"
+                class="min-w-[118px] flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-[#c3baaa]"
+                @input="store.updateBasics({ email: ($event.target as HTMLInputElement).value })"
+              />
+            </div>
           </FormSection>
 
           <!-- 工作经历 -->
-          <FormSection :title="`工作经历 · ${store.data.experience.length} 段`">
-            <template #action>
-              <button
-                type="button"
-                class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-vermilion transition hover:bg-vermilion-soft"
-                @click="store.addItem('experience')"
-              >
-                <AppIcon name="plus" class="h-3.5 w-3.5" />
-                添加经历
-              </button>
-            </template>
-
-            <p
-              v-if="store.data.experience.length === 0"
-              class="rounded-xl border border-dashed border-[#d9d1c3] px-4 py-5 text-center text-[13px] text-ink-weak"
-            >
-              还没有填工作经历，这是简历里最重要的一块。
-            </p>
-
+          <SectionCard
+            v-model:collapsed="collapsed.experience"
+            :title="`工作经历 · ${store.data.experience.length} 段`"
+            :summary="expSummary"
+          >
             <div
-              v-for="item in store.data.experience"
+              v-for="(item, i) in store.data.experience"
               :key="item.id"
-              class="space-y-2.5 rounded-2xl border border-[#e8e1d5] bg-white p-4 shadow-[0_6px_18px_-4px_rgba(23,21,15,0.05)]"
+              class="space-y-2.5"
+              :class="i > 0 ? 'mt-4 border-t border-[#f0e9dd] pt-4' : ''"
             >
               <div class="flex flex-col gap-2.5 sm:flex-row">
                 <TextField
-                  label="公司"
+                  tone="cream"
                   :model-value="item.company"
                   placeholder="字节跳动"
                   @update:model-value="(v) => store.updateItem('experience', item.id, { company: v })"
                 />
                 <TextField
-                  label="职位"
+                  tone="cream"
                   :model-value="item.role"
                   placeholder="高级产品经理"
                   @update:model-value="(v) => store.updateItem('experience', item.id, { role: v })"
@@ -311,15 +365,15 @@ function clearAll() {
               </div>
               <div class="flex flex-col gap-2.5 sm:flex-row">
                 <TextField
-                  label="开始"
+                  tone="cream"
                   :model-value="item.start"
-                  placeholder="2021.03"
+                  placeholder="开始 2021.03"
                   @update:model-value="(v) => store.updateItem('experience', item.id, { start: v })"
                 />
                 <TextField
-                  label="结束"
+                  tone="cream"
                   :model-value="item.end"
-                  placeholder="至今"
+                  placeholder="结束 至今"
                   @update:model-value="(v) => store.updateItem('experience', item.id, { end: v })"
                 />
               </div>
@@ -336,42 +390,29 @@ function clearAll() {
                 删除这一段
               </button>
             </div>
-          </FormSection>
+          </SectionCard>
 
           <!-- 项目经验 -->
-          <FormSection :title="`项目经验 · ${store.data.projects.length} 个`">
-            <template #action>
-              <button
-                type="button"
-                class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-vermilion transition hover:bg-vermilion-soft"
-                @click="store.addItem('projects')"
-              >
-                <AppIcon name="plus" class="h-3.5 w-3.5" />
-                添加项目
-              </button>
-            </template>
-
-            <p
-              v-if="store.data.projects.length === 0"
-              class="rounded-xl border border-dashed border-[#d9d1c3] px-4 py-5 text-center text-[13px] text-ink-weak"
-            >
-              有拿得出手的项目就写一条，能补上经历之外的能力证明。
-            </p>
-
+          <SectionCard
+            v-model:collapsed="collapsed.projects"
+            :title="`项目经验 · ${store.data.projects.length} 个`"
+            :summary="prjSummary"
+          >
             <div
-              v-for="item in store.data.projects"
+              v-for="(item, i) in store.data.projects"
               :key="item.id"
-              class="space-y-2.5 rounded-2xl border border-[#e8e1d5] bg-white p-4 shadow-[0_6px_18px_-4px_rgba(23,21,15,0.05)]"
+              class="space-y-2.5"
+              :class="i > 0 ? 'mt-4 border-t border-[#f0e9dd] pt-4' : ''"
             >
               <div class="flex flex-col gap-2.5 sm:flex-row">
                 <TextField
-                  label="项目"
+                  tone="cream"
                   :model-value="item.name"
                   placeholder="用户增长中台"
                   @update:model-value="(v) => store.updateItem('projects', item.id, { name: v })"
                 />
                 <TextField
-                  label="角色"
+                  tone="cream"
                   :model-value="item.role"
                   placeholder="核心成员"
                   @update:model-value="(v) => store.updateItem('projects', item.id, { role: v })"
@@ -379,15 +420,15 @@ function clearAll() {
               </div>
               <div class="flex flex-col gap-2.5 sm:flex-row">
                 <TextField
-                  label="开始"
+                  tone="cream"
                   :model-value="item.start"
-                  placeholder="2022.06"
+                  placeholder="开始 2022.06"
                   @update:model-value="(v) => store.updateItem('projects', item.id, { start: v })"
                 />
                 <TextField
-                  label="结束"
+                  tone="cream"
                   :model-value="item.end"
-                  placeholder="2023.04"
+                  placeholder="结束 2023.04"
                   @update:model-value="(v) => store.updateItem('projects', item.id, { end: v })"
                 />
               </div>
@@ -404,48 +445,35 @@ function clearAll() {
                 删除这一段
               </button>
             </div>
-          </FormSection>
+          </SectionCard>
 
-          <!-- 教育背景 -->
-          <FormSection :title="`教育背景 · ${store.data.education.length} 条`">
-            <template #action>
-              <button
-                type="button"
-                class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-vermilion transition hover:bg-vermilion-soft"
-                @click="store.addItem('education')"
-              >
-                <AppIcon name="plus" class="h-3.5 w-3.5" />
-                添加学历
-              </button>
-            </template>
-
-            <p
-              v-if="store.data.education.length === 0"
-              class="rounded-xl border border-dashed border-[#d9d1c3] px-4 py-5 text-center text-[13px] text-ink-weak"
-            >
-              至少写一条学历，校招和社招都会看。
-            </p>
-
+          <!-- 教育背景（设计稿里折叠成「教育背景 · 已填好」+ 摘要行） -->
+          <SectionCard
+            v-model:collapsed="collapsed.education"
+            :title="`教育背景 · ${store.data.education.length > 0 ? '已填好' : '待填写'}`"
+            :summary="eduSummary"
+          >
             <div
-              v-for="item in store.data.education"
+              v-for="(item, i) in store.data.education"
               :key="item.id"
-              class="space-y-2.5 rounded-2xl border border-[#e8e1d5] bg-white p-4 shadow-[0_6px_18px_-4px_rgba(23,21,15,0.05)]"
+              class="space-y-2.5"
+              :class="i > 0 ? 'mt-4 border-t border-[#f0e9dd] pt-4' : ''"
             >
               <TextField
-                label="学校"
+                tone="cream"
                 :model-value="item.school"
                 placeholder="同济大学"
                 @update:model-value="(v) => store.updateItem('education', item.id, { school: v })"
               />
               <div class="flex flex-col gap-2.5 sm:flex-row">
                 <TextField
-                  label="专业"
+                  tone="cream"
                   :model-value="item.major"
                   placeholder="工业设计"
                   @update:model-value="(v) => store.updateItem('education', item.id, { major: v })"
                 />
                 <TextField
-                  label="学历"
+                  tone="cream"
                   :model-value="item.degree"
                   placeholder="硕士"
                   @update:model-value="(v) => store.updateItem('education', item.id, { degree: v })"
@@ -453,15 +481,15 @@ function clearAll() {
               </div>
               <div class="flex flex-col gap-2.5 sm:flex-row">
                 <TextField
-                  label="入学"
+                  tone="cream"
                   :model-value="item.start"
-                  placeholder="2017.09"
+                  placeholder="入学 2017.09"
                   @update:model-value="(v) => store.updateItem('education', item.id, { start: v })"
                 />
                 <TextField
-                  label="毕业"
+                  tone="cream"
                   :model-value="item.end"
-                  placeholder="2020.06"
+                  placeholder="毕业 2020.06"
                   @update:model-value="(v) => store.updateItem('education', item.id, { end: v })"
                 />
               </div>
@@ -474,7 +502,7 @@ function clearAll() {
                 删除这一段
               </button>
             </div>
-          </FormSection>
+          </SectionCard>
 
           <!-- 技能 -->
           <FormSection title="技能与工具" hint="用「·」分隔，ATS 按关键词检索">
@@ -482,27 +510,42 @@ function clearAll() {
               :value="store.data.skills"
               rows="3"
               placeholder="产品策略 · 数据分析 · A/B 测试 · SQL · Figma"
-              class="w-full resize-none rounded-[11px] border border-line bg-white px-3.5 py-3 text-[14px] leading-6 text-ink outline-none transition focus:border-vermilion"
+              class="w-full resize-none rounded-[11px] border border-[#ece5d9] bg-[#fbf7ef] px-3.5 py-3 text-[14px] leading-6 text-ink outline-none transition focus:border-vermilion"
               @input="store.updateSkills(($event.target as HTMLTextAreaElement).value)"
             />
           </FormSection>
 
-          <!-- 添加模块 -->
-          <div class="rounded-[14px] border border-dashed border-[#d9d1c3] p-4">
-            <p class="text-[13px] font-semibold text-ink-soft">添加模块</p>
-            <div class="mt-2.5 flex flex-wrap gap-2">
+          <!-- 添加模块：设计稿是单个虚线按钮，展开后选类型 -->
+          <div>
+            <button
+              type="button"
+              class="flex w-full items-center justify-center gap-1.5 rounded-[12px] border border-dashed border-[#d9d1c3] px-4 py-3.5 text-[13.5px] font-medium text-ink-soft transition hover:border-vermilion hover:text-vermilion"
+              :aria-expanded="addModuleOpen"
+              @click="addModuleOpen = !addModuleOpen"
+            >
+              <AppIcon name="plus" class="h-4 w-4" />
+              添加模块：工作经历 / 项目经验 / 教育背景
+            </button>
+            <div
+              v-if="addModuleOpen"
+              class="mt-2.5 flex flex-wrap gap-2 rounded-[12px] border border-line bg-white p-3"
+            >
               <button
-                v-for="m in [
-                  { key: 'experience', label: '＋ 工作经历' },
-                  { key: 'projects', label: '＋ 项目经验' },
-                  { key: 'education', label: '＋ 教育背景' },
-                ]"
+                v-for="m in moduleOptions"
                 :key="m.key"
                 type="button"
-                class="rounded-lg bg-white px-3 py-1.5 text-[13px] font-medium text-[#4a4238] shadow-[0_2px_6px_-2px_rgba(23,21,15,0.1)] transition hover:text-vermilion"
-                @click="store.addItem(m.key as 'experience' | 'projects' | 'education')"
+                class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition"
+                :class="
+                  m.ready
+                    ? 'bg-paper text-[#4a4238] hover:text-vermilion'
+                    : 'cursor-not-allowed bg-paper/60 text-[#b0a695]'
+                "
+                :disabled="!m.ready"
+                :title="m.ready ? undefined : '即将上线'"
+                @click="addModule(m)"
               >
                 {{ m.label }}
+                <span v-if="!m.ready" class="text-[11px]">即将上线</span>
               </button>
             </div>
           </div>
