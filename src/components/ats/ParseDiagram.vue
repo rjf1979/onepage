@@ -3,7 +3,10 @@
  * ATS 报告右侧的示意：抽象简历骨架 + 绿色虚线框。
  * 用虚线框而不是真实内容，是为了说清一件事 ——
  * 机器读到的是「区块」，而不是排版。
+ *
+ * 脚注随当前模板变化：视觉分栏时不能再说「单栏纯文本结构下」。
  */
+const props = defineProps<{ twoColumn?: boolean }>();
 
 const blocks = [
   { label: "基本信息", lines: ["name", "meta"] },
@@ -16,6 +19,10 @@ const blocks = [
 function rowStyle(i: number): string {
   return i % 2 === 0 ? "width: 92%" : "width: 76%";
 }
+
+const caption = props.twoColumn
+  ? "绿色虚线 = 机器能稳定读取的内容块。当前模板为视觉分栏，但这四个区块在文档里仍按单栏线性排列，文本会完整输出、不会漏读；少数按坐标取词的解析器可能打乱顺序，投大厂建议改用单栏模板。"
+  : "绿色虚线 = 机器能稳定读取的内容块。单栏纯文本结构下，这四个区块会按顺序被完整解析，不会漏读也不会串行。";
 </script>
 
 <template>
@@ -67,7 +74,7 @@ function rowStyle(i: number): string {
     </div>
 
     <p class="mt-4 max-w-[420px] text-[13px] leading-[22px] text-ink-weak">
-      绿色虚线 = 机器能稳定读取的内容块。单栏纯文本结构下，这四个区块会按顺序被完整解析，不会漏读也不会串行。
+      {{ caption }}
     </p>
   </div>
 </template>

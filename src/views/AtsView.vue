@@ -5,6 +5,7 @@ import AppIcon from "@/components/AppIcon.vue";
 import ParseDiagram from "@/components/ats/ParseDiagram.vue";
 import { useResumeStore } from "@/stores/resume";
 import { analyzeResume } from "@/lib/ats";
+import { findTemplate } from "@/lib/templates";
 
 const store = useResumeStore();
 const report = computed(() => analyzeResume(store.data));
@@ -16,6 +17,8 @@ const report = computed(() => analyzeResume(store.data));
  */
 const warnCount = computed(() => report.value.checks.filter((c) => c.status === "warn").length);
 const passed = computed(() => warnCount.value === 0);
+/** 当前模板是否为视觉分栏 —— 决定解析示意的脚注怎么措辞 */
+const twoColumn = computed(() => findTemplate(store.data.templateId)?.layout === "two-column-dom-safe");
 const eyebrow = computed(() =>
   passed.value ? "自检完成 · 可以放心投递" : `自检完成 · ${warnCount.value} 处建议待改`
 );
@@ -164,7 +167,7 @@ function exportPdf() {
 
       <!-- ---------- 解析示意 ---------- -->
       <div class="flex w-full max-w-[420px] flex-col items-center xl:items-start">
-        <ParseDiagram />
+        <ParseDiagram :two-column="twoColumn" />
       </div>
     </div>
   </div>

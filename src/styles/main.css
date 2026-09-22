@@ -68,6 +68,35 @@ body {
   padding: 10mm 15mm 8mm;
 }
 
+/* ============================================================
+   作品集双栏 —— 视觉分栏，DOM 顺序仍是线性
+   只用栅格摆放两个普通流式区块，不用表格 / 浮动 / 绝对定位，
+   这是「机器按文档顺序取词时仍拿到连贯文本」的前提。
+   间距用绝对单位，保证打印（页面盒窄于屏幕）时版式不漂移。
+   ============================================================ */
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: 34% 1fr;
+  gap: 0 8mm;
+  align-items: stretch;
+}
+
+/* DOM 在前的是正文，视觉上靠 order 落到右栏 */
+.portfolio-main {
+  order: 2;
+  min-width: 0;
+}
+
+/* DOM 在后的是侧栏，视觉上落在左栏 */
+.portfolio-side {
+  order: 1;
+  padding: 5mm;
+  background: #faf7f0;
+  /* 打印时保住底色，否则侧栏变成一片白 */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
 /* 屏幕预览时按容器等比例缩放 */
 .paper-frame {
   margin: 0 auto;

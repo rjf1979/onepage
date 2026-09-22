@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { RouterLink } from "vue-router";
 import TemplateThumb from "./TemplateThumb.vue";
 import AppIcon from "@/components/AppIcon.vue";
@@ -6,6 +7,14 @@ import { LIVE_TEMPLATES, PENDING_TEMPLATES, TEMPLATES } from "@/lib/templates";
 
 /** 已上线的排前面，每个模板的可用状态只有 lib/templates.ts 一个来源 */
 const ordered = [...LIVE_TEMPLATES, ...PENDING_TEMPLATES];
+
+/** 说明文案随可用状态自变，避免「已上线 4 套，还有 0 套在打磨」这种废话 */
+const wallNote = computed(() => {
+  const live = LIVE_TEMPLATES.length;
+  const pending = PENDING_TEMPLATES.length;
+  const intro = pending > 0 ? `已上线 ${live} 套，还有 ${pending} 套在打磨。` : `${live} 套模板全部上线。`;
+  return `${intro}每一套都要先过 ATS 解析这一关：不用文本框、图标、表格这类机器读不到的结构；分栏模板只用 CSS 栅格做视觉分层，文本顺序仍按单栏线性输出，自检里会如实标成「中等风险」，而不是闭眼说低。`;
+});
 </script>
 
 <template>
@@ -23,10 +32,7 @@ const ordered = [...LIVE_TEMPLATES, ...PENDING_TEMPLATES];
         <p
           class="mt-3.5 max-w-[620px] text-[15px] leading-[27px] text-ink-soft lg:text-[16px]"
         >
-          已上线 {{ LIVE_TEMPLATES.length }} 套，还有 {{ PENDING_TEMPLATES.length }} 套在打磨。
-          每一套都要先过 ATS 解析这一关：不用文本框、图标、表格这类机器读不到的结构；
-          分栏模板只用 CSS 栅格做视觉分层，文本顺序仍按单栏线性输出，
-          自检里会如实标成「中等风险」，而不是闭眼说低。
+          {{ wallNote }}
         </p>
       </div>
       <RouterLink
@@ -62,15 +68,24 @@ const ordered = [...LIVE_TEMPLATES, ...PENDING_TEMPLATES];
             </span>
           </div>
         </div>
-        <p class="font-serif-cn mt-3.5 text-[17px] font-semibold text-ink">
-          {{ t.name }}
-        </p>
+        <div class="mt-3.5 flex flex-wrap items-center gap-2">
+          <p class="font-serif-cn text-[17px] font-semibold text-ink">
+            {{ t.name }}
+          </p>
+          <!-- 分栏模板主动亮出风险等级，别让用户自己发现 -->
+          <span
+            v-if="t.layout === 'two-column-dom-safe'"
+            class="rounded-full bg-[#f7edd6] px-2.5 py-0.5 text-[11.5px] font-semibold text-warn-text"
+          >
+            ATS 中风险
+          </span>
+        </div>
         <p class="mt-1 text-[13px] text-ink-weak">{{ t.tag }}</p>
       </component>
     </div>
 
     <p class="mt-6 text-[13px] text-ink-weak">
-      共 {{ TEMPLATES.length }} 套在路线图上 · 全部免费，不锁导出。
+      {{ TEMPLATES.length }} 套模板 · 已上线 {{ LIVE_TEMPLATES.length }} 套 · 全部免费，不锁导出。
     </p>
   </section>
 </template>

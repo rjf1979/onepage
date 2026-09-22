@@ -46,7 +46,7 @@ export const TEMPLATES: readonly TemplateMeta[] = [
     name: "作品集双栏",
     tag: "设计 · 摄影 · 建筑",
     variant: "portfolio",
-    available: false,
+    available: true,
     layout: "two-column-dom-safe",
     expectsMultiPage: false,
   },

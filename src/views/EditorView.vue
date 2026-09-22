@@ -648,8 +648,8 @@ function clearAll() {
           </button>
         </div>
         <p class="mt-1.5 text-[13px] text-ink-weak">
-          已上线的模板都是单栏纯文本结构，ATS 可完整解析。后续的分栏模板会保证 DOM
-          顺序仍为单栏线性，并在自检里如实标注解析风险。
+          已上线的模板都不用文本框、图标、表格这类机器读不到的结构。分栏模板只用 CSS
+          栅格做视觉分层，文本顺序仍按单栏线性输出，自检里会如实标成「中等风险」。
         </p>
         <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
@@ -694,7 +694,15 @@ function clearAll() {
                 打磨中
               </span>
             </div>
-            <p class="mt-1 text-[12.5px] text-ink-weak">{{ t.tag }}</p>
+            <p class="mt-1 flex flex-wrap items-center gap-2 text-[12.5px] text-ink-weak">
+              <span>{{ t.tag }}</span>
+              <span
+                v-if="t.layout === 'two-column-dom-safe'"
+                class="rounded-full bg-[#f7edd6] px-2 py-0.5 text-[11px] font-semibold text-warn-text"
+              >
+                ATS 中风险
+              </span>
+            </p>
           </button>
         </div>
       </div>
