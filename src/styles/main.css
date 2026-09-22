@@ -1,0 +1,137 @@
+@import "tailwindcss";
+/* 自托管 Noto Sans SC / Noto Serif SC（可变字体分片），见 scripts/fetch-fonts.mjs */
+@import "./fonts.css";
+
+/* ============================================================
+   一页 OnePage · 设计系统 Token（来自 Ardot 设计稿）
+   纸感 Editorial：暖白纸 + 墨黑 + 朱砂红
+   ============================================================ */
+@theme {
+  --color-paper: #fbf9f5;
+  --color-card: #ffffff;
+  --color-ink: #17150f;
+  --color-ink-soft: #6e6558;
+  --color-ink-weak: #8a8175;
+  --color-vermilion: #d6401f;
+  --color-vermilion-deep: #b0401f;
+  --color-vermilion-soft: #f6e7e0;
+  --color-success: #1f6b4a;
+  --color-success-soft: #eaf0ea;
+  --color-warn: #d9a13b;
+  --color-warn-text: #a97b1c;
+  --color-line: #e3dcd0;
+  --color-deco: #efe9dc;
+  --color-dark: #17150f;
+
+  --font-serif-cn:
+    "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --font-sans-cn:
+    "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui,
+    sans-serif;
+  --font-latin: Inter, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans-cn);
+}
+
+/* ============================================================
+   A4 简历纸 —— 屏幕预览与打印共用同一份尺寸
+   ============================================================ */
+.resume-paper {
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  padding: 16mm 15mm;
+  box-sizing: border-box;
+  color: #17150f;
+  font-size: 10.5pt;
+  line-height: 1.65;
+}
+
+/* 屏幕预览时按容器等比例缩放 */
+.paper-frame {
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+/* ============================================================
+   打印层 —— 屏幕上不可见，打印时是 body 下唯一可见节点
+   （PrintLayer.vue 通过 Teleport 挂到 body，故可作为 body 直接子元素命中）
+   ============================================================ */
+.print-root {
+  display: none;
+}
+
+@media print {
+  body > *:not(.print-root) {
+    display: none !important;
+  }
+
+  .print-root {
+    display: block !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  .resume-paper {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 16mm 15mm;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    page-break-inside: auto;
+  }
+
+  /* 每个简历模块尽量不被拦腰截断 */
+  .resume-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* 细滚动条（编辑器表单区） */
+.scroll-slim::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: #dddddd;
+  border-radius: 3px;
+}
+
+/* 入场动效：轻微上浮，克制使用 */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rise {
+  animation: rise 0.5s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise {
+    animation: none;
+  }
+}
